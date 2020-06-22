@@ -2,17 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Level2OggPlayer : MonoBehaviour, IDialogueSequenceEventHandler, IPromptButtonEventHandler, ILoreEventHandler {
+public class Level2OggPlayer : AInspectable, IDialogueSequenceEventHandler, IPromptButtonEventHandler, ILoreEventHandler {
 
-  public LoreManager Lore;
   public DialogueManager Dialogue;
   public DialoguePromptManager PromptManager;
-  public AudioSource Player;
+  public SongHopper SongHopper;
 
-  void OnTriggerEnter2D (Collider2D other) {
-    if ( other.tag == "Player" ) {
-      Dialogue.Play("Dialogue/OggPlayer", this);
-    }
+  public override void OnInspect() {
+    Dialogue.Play("Dialogue/OggPlayer", this);
   }
 
   public void SequenceFinished () {
@@ -30,22 +27,12 @@ public class Level2OggPlayer : MonoBehaviour, IDialogueSequenceEventHandler, IPr
 
   public void ButtonPressed (string button) {
     if ( button == "positive" ) {
-      Lore.Open("Lore/Blank", this);
-
-      MainMusicPlayer().enabled = false;
-      Player.enabled = true;
-      Player.Play();
+      LevelLoreManager.Current.Open("Lore/Blank", this);
+      SongHopper.Hop();
     }
   }
 
   public void Closed () {
-    MainMusicPlayer().enabled = true;
-    MainMusicPlayer().Play();
-    Player.enabled = false;
-    Player.Stop();
-  }
-
-  AudioSource MainMusicPlayer () {
-    return MusicController.Current.Player;
+    SongHopper.Stop();
   }
 }

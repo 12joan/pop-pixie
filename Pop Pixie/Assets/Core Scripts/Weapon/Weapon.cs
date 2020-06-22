@@ -1,41 +1,32 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
-[System.Serializable]
-public class Weapon {
+public class Weapon : MonoBehaviour {
 
   public float FireRate;
   public int Capacity;
   public int Ammunition;
+  public float Scatter = 0;
   public float BulletSpeed;
   public GameObject BulletPrefab;
+  public Sprite Sprite;
+  public Sprite InHandSprite;
+  public AudioClip ShootSound;
 
-  public static Weapon PopPistol(){
-    var w = new Weapon();
-    w.FireRate = 2.0f;
-    w.Capacity = 12;
-    w.Ammunition = 12;
-    w.BulletSpeed = 8.0f;
-    w.BulletPrefab = (GameObject)Resources.Load(
-      "Bullets/Pop Pellet", 
-      typeof(GameObject)
-    );
+  public float CooldownInterval() 
+    => 1.0f / FireRate;
 
-    return w;
-  }
-
-  public bool HasBullets() {
-    return Ammunition > 0;
-  }
+  public bool HasBullets() 
+    => Ammunition > 0;
 
   public void ExpendBullet() {
     Ammunition = Mathf.Max(0, Ammunition - 1);
   }
 
-  public bool Full() {
-    return Ammunition == Capacity;
-  }
+  public bool Full() 
+    => Ammunition == Capacity;
 
   public void Reload() {
     Ammunition = Capacity;

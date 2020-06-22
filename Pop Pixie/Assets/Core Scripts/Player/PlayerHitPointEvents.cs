@@ -5,13 +5,11 @@ using UnityEngine.SceneManagement;
 
 public class PlayerHitPointEvents : MonoBehaviour, IHitPointEvents {
 
-  public MonoBehaviour HealthBar;
+  public HUDBar HealthBar;
   public ScreenFade Fader;
-  public float TimeToDie;
 
   public void Updated (HitPoints hp) {
-    var hb = (HUDBar) HealthBar;
-    hb.Progress = hp.Current / hp.Maximum;
+    HealthBar.Progress = hp.Current / hp.Maximum;
   }
 
   public void Decreased (HitPoints hp) {
@@ -19,10 +17,14 @@ public class PlayerHitPointEvents : MonoBehaviour, IHitPointEvents {
   }
 
   public void BecameZero (HitPoints hp) {
+    // Make sure you can't quit out to avoid dying
+    SaveGame.ReadSave();
+    SaveGame.WriteAutoSave();
+
     StateManager.SetState( State.Dying );
-    Fader.Fade("to black", 3.0f);
-    MusicController.Current.Fade(1.0f, 0.0f, 1.0f);
-    Invoke("GameOverScreen", TimeToDie);
+    Fader.Fade("to black", 2.0f);
+    AudioMixer.Current.FadeOut(1.0f);
+    Invoke("GameOverScreen", 2.0f);
   }
 
   void GameOverScreen () {

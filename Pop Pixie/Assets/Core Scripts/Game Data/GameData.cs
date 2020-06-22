@@ -1,12 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System;
-using System.Runtime.Serialization.Formatters.Binary;
+using UnityEngine;
 
-// An object containing all the data that is 
-// persisted from session to session.
+public class GameData : AData {
+  public static GameData Current = new GameData();
 
-[Serializable]
-public class GameData {
-  public int LevelId;
+  public override Dictionary<string, dynamic> LocalDefaultDictionary() {
+    return new Dictionary<string, dynamic> {
+      { "VERSION", "1.1" }
+    };
+  }
+
 }

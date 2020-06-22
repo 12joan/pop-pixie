@@ -6,52 +6,68 @@ using UnityEngine;
 public class WeaponReload : MonoBehaviour {
 
   public float Duration;
-  public MonoBehaviour ReloadBar;
-  public MonoBehaviour SpeedManager;
-  public bool InProgress;
+  public AudioClip ReloadSound;
+  public SoundController SoundController;
+  public HUDBar ReloadBar;
+  public MovementManager MovementManager;
 
-  private DateTime StartedAt;
+  IntervalTimer ReloadTimer;
 
 	// Use this for initialization
 	void Start () {
-    InProgress = false;
+    ReloadTimer = new IntervalTimer() {
+      Interval = Duration
+    };
 
     // Reduce speed by half when reload is InProgress
-    SpeedModifier modifier = s => InProgress ? 0.5f * s : s;
+    MovementManager.SpeedModifiers.Add(
+      s => InProgress() ? 0.5f * s : s
+    );
 
-    var sm = (PlayerMovable) SpeedManager;
-    sm.SpeedModifiers.Add(modifier);
 	}
 	
 	// Update is called once per frame
 	void Update () {
-    var rb = (HUDBar) ReloadBar;
+    ReloadTimer.IfElapsed( CurrentWeapon().Reload );
 
-    if ( Input.GetButton("Reload") && CanReload() ) {
-      if ( !InProgress ) {
-        InProgress = true;
-        StartedAt = DateTime.Now;
+    if ( WrappedInput.GetButtonDown("Reload") && !InProgress() && CanReload() )
+      BeginReload();
+
+    if ( InProgress() ) {
+      if ( CanReload() ) {
+        ReloadBar.Progress = Progress();
+      } else {
+        ReloadTimer.Stop();
+        SoundController.Stop();
       }
-
-      rb.Progress = Progress();
-
-      if ( Progress() == 1.0f )
-        CurrentWeapon().Reload();
-
-    } else {
-      InProgress = false;
     }
 
-    rb.Visible = InProgress;
+    ReloadBar.Visible = InProgress();
 	}
 
+  public void Interrupt() {
+    ReloadTimer.Stop();
+  }
+
+  void BeginReload() {
+    ReloadTimer.Reset();
+    SoundController.Play( ReloadSound );
+  }
+
+  bool InProgress() {
+    return ReloadTimer.Started && !ReloadTimer.Elapsed();
+  }
+
   bool CanReload() {
-    return !CurrentWeapon().Full();
+    return !CurrentWeapon().Full() && StateManager.Is( State.Playing );
   }
 
   float Progress() {
-    float since = (float) DateTime.Now.Subtract( StartedAt ).TotalSeconds;
-    return Mathf.Min( since / Duration, 1.0f );
+    return Mathf.Clamp(
+      ReloadTimer.TimeSinceElapsed() / Duration,
+      0f,
+      1f
+    );
   }
 
   Weapon CurrentWeapon() {

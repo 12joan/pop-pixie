@@ -6,7 +6,6 @@ public class Level2Started : MonoBehaviour, IDialogueSequenceEventHandler {
 
   public DialogueManager Dialogue;
   public ScreenFade Fader;
-  public AudioClip Music;
   public Camera MainCamera, CutsceneCamera;
   public MentoeRunToElevator MentoeAnimation;
 
@@ -15,8 +14,13 @@ public class Level2Started : MonoBehaviour, IDialogueSequenceEventHandler {
 	// Use this for initialization
 	void Start () {
     Fader.Fade("from black", 2.0f);
-    MusicController.Current.Play(Music, "level 1");
+    StateManager.SetState( State.Playing );
 
+    GDCall.UnlessLoad( StartCutscene );
+    GDCall.IfLoad( MentoeAnimation.Skip );
+  }
+
+  public void StartCutscene() {
     MainCamera.enabled = false;
     CutsceneCamera.enabled = true;
 
@@ -28,14 +32,13 @@ public class Level2Started : MonoBehaviour, IDialogueSequenceEventHandler {
     switch (DialogueCount) {
       case 0:
         StateManager.SetState( State.Cutscene );
-        MusicController.Current.SetVolume(0.25f);
         MentoeAnimation.Run();
         Invoke("PlaySecondDialogue", 3.0f);
         break;
 
       case 1:
-        Fader.Fade("to black", 1.0f);
-        Invoke("SwitchToMainCamera", 2.0f);
+        Fader.Fade("to black", 0.5f);
+        Invoke("SwitchToMainCamera", 0.5f);
         break;
     }
   }
@@ -49,6 +52,6 @@ public class Level2Started : MonoBehaviour, IDialogueSequenceEventHandler {
     MainCamera.enabled = true;
     CutsceneCamera.enabled = false;
 
-    Fader.Fade("from black", 1.0f);
+    Fader.Fade("from black", 0.5f);
   }
 }

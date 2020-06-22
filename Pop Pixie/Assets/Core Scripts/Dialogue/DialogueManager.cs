@@ -6,13 +6,17 @@ using UnityEngine;
 public class DialogueManager : MonoBehaviour, IDialoguePageEventHandler {
 
   public DialogueBoxController DialogueBox;
-  public AudioSource Player;
+  public SoundController SoundController;
   public float InterruptCooldown;
+  public float SkipCooldown;
 
   private DialogueSequence Sequence;
   private int SequenceProgress;
   private bool DialogueBoxInProgress;
   private IDialogueSequenceEventHandler EventHandler;
+
+  IntervalTimer SkipCooldownTimer; 
+  bool ButtonReleased;
 
   void ReadPage (DialoguePage page) {
     DialogueBoxInProgress = true;
@@ -20,10 +24,9 @@ public class DialogueManager : MonoBehaviour, IDialoguePageEventHandler {
     DialogueBox.SetFace( page.Face() );
 
     if ( page.HasVoiceLine() ) {
-      Player.clip = page.VoiceLine();
-      Player.Play();
+      SoundController.Play( page.VoiceLine() );
     } else {
-      Player.Stop();
+      SoundController.Stop();
     }
   }
 
@@ -45,16 +48,15 @@ public class DialogueManager : MonoBehaviour, IDialoguePageEventHandler {
   void Exit () {
     DialogueBox.Hide();
     StateManager.SetState( State.Playing );
-    MusicController.Current.SetVolume(1.0f);
     EventHandler.SequenceFinished();
-    Player.Stop();
+    SoundController.Stop();
   }
 
 	public void Play (string sequence_name, IDialogueSequenceEventHandler event_handler) {
+    ButtonReleased = false;
     DialogueBoxInProgress = false;
     DialogueBox.Show();
     StateManager.SetState( State.Dialogue );
-    MusicController.Current.SetVolume(0.25f);
 
     string json = Resources.Load<TextAsset>(sequence_name).text;
     Sequence = DialogueSequence.ParseJSON(json);
@@ -65,10 +67,16 @@ public class DialogueManager : MonoBehaviour, IDialoguePageEventHandler {
     ReadNextPage();
 	}
 
-  private bool ButtonDown;
-
   void Awake () {
     DialogueBox.Hide();
+  }
+
+  void Start () {
+    SkipCooldownTimer = new IntervalTimer() {
+      Interval = SkipCooldown
+    };
+
+    SkipCooldownTimer.Start();
   }
 	
 	// Update is called once per frame
@@ -76,22 +84,26 @@ public class DialogueManager : MonoBehaviour, IDialoguePageEventHandler {
     if ( StateManager.Isnt( State.Dialogue ) )
       return;
 
-    if ( Input.GetButton("Submit") ) {
-      if ( ButtonDown != true ) {
-        ButtonDown = true;
+    if ( ButtonReleased && WrappedInput.GetButton("Confirm") ) {
+      ButtonReleased = false;
 
-        if (DialogueBoxInProgress) {
-          DialogueBox.FinishPage();
-        } else {
-          ReadNextPage();
-        }
+      if (DialogueBoxInProgress) {
+        DialogueBox.FinishPage();
+      } else {
+        ReadNextPage();
       }
-    } else {
-      ButtonDown = false;
     }
 
-    if ( Input.GetButton("AbortDialogue") ) {
-      Exit();
+    ButtonReleased = ! WrappedInput.GetButton("Confirm");
+
+    if ( WrappedInput.GetButton("Cancel") && !DialogueBoxInProgress ) {
+      ReadNextPage();
+    }
+
+    if ( WrappedInput.GetButton("Skip") && SkipCooldownTimer.Elapsed() ) {
+      SkipCooldownTimer.Reset();
+      ReadNextPage();
+      DialogueBox.FinishPage();
     }
 	}
 }
